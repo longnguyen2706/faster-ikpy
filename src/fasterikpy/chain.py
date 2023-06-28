@@ -3,7 +3,7 @@
 .. module:: chain
 This module implements the Chain class.
 """
-import numpy as np
+import cupy as cp
 import json
 import os
 from typing import List
@@ -44,10 +44,10 @@ class Chain:
         if active_links_mask is not None:
             if len(active_links_mask) != len(self.links):
                 raise ValueError("Your active links mask length of {} is different from the number of your links, which is {}".format(len(active_links_mask), len(self.links)))
-            self.active_links_mask = np.array(active_links_mask)
+            self.active_links_mask = cp.array(active_links_mask)
 
         else:
-            self.active_links_mask = np.array([True] * len(links))
+            self.active_links_mask = cp.array([True] * len(links))
 
         # Always set the last link to True
         if self.active_links_mask[-1] is True:
@@ -80,7 +80,7 @@ class Chain:
         frame_matrix:
             The transformation matrix
         """
-        frame_matrix = np.eye(4)
+        frame_matrix = cp.eye(4)
 
         if full_kinematics:
             frame_matrixes = []
@@ -92,9 +92,9 @@ class Chain:
             # Compute iteratively the position
             # NB : Use asarray to avoid old sympy problems
             # FIXME: The casting to array is a loss of time
-            frame_matrix = np.dot(frame_matrix, np.asarray(link.get_link_frame_matrix(joint_parameters)))
+            frame_matrix = cp.dot(frame_matrix, cp.asarray(link.get_link_frame_matrix(joint_parameters)))
             if full_kinematics:
-                # rotation_axe = np.dot(frame_matrix, link.rotation)
+                # rotation_axe = cp.dot(frame_matrix, link.rotation)
                 frame_matrixes.append(frame_matrix)
 
         # Return the matrix, or matrixes
@@ -108,9 +108,9 @@ class Chain:
 
         Parameters
         ----------
-        target_position: np.ndarray
+        target_position: cp.ndarray
             Vector of shape (3,): the target point
-        target_orientation: np.ndarray
+        target_orientation: cp.ndarray
             Vector of shape (3,): the target orientation
         orientation_mode: str
             Orientation to target. Choices:
@@ -126,7 +126,7 @@ class Chain:
         list:
             The list of the positions of each joint according to the target. Note : Inactive joints are in the list.
         """
-        frame_target = np.eye(4)
+        frame_target = cp.eye(4)
 
         # Compute orientation
         if orientation_mode is not None:
@@ -167,7 +167,7 @@ class Chain:
             The list of the positions of each joint according to the target. Note : Inactive joints are in the list.
         """
         # Checks on input
-        target = np.array(target)
+        target = cp.array(target)
         if target.shape != (4, 4):
             raise ValueError("Your target must be a 4x4 transformation matrix")
 
@@ -190,7 +190,7 @@ class Chain:
         show: bool
             Display the axe. Defaults to False
         """
-        from ikpy.utils import plot
+        from fasterikpy.utils import plot
 
         if ax is None:
             # If ax is not given, create one
@@ -283,7 +283,7 @@ class Chain:
         return self._json_path
 
     @classmethod
-    def from_urdf_file(cls, urdf_file, base_elements=None, last_link_vector=None, base_element_type="link", active_links_mask=None, name="chain", symbolic=True):
+    def from_urdf_file(cls, urdf_file, base_elements=None, last_link_vector=None, base_element_type="link", active_links_mask=None, name="chain", symbolic=False):
         """Creates a chain from an URDF file
 
         Parameters
@@ -333,12 +333,12 @@ class Chain:
         return chain
 
     def active_to_full(self, active_joints, initial_position):
-        full_joints = np.array(initial_position, copy=True, dtype=np.float64)
-        np.place(full_joints, self.active_links_mask, active_joints)
+        full_joints = cp.array(initial_position, copy=True, dtype=cp.float64)
+        cp.place(full_joints, self.active_links_mask, active_joints)
         return full_joints
 
     def active_from_full(self, joints):
-        return np.compress(self.active_links_mask, joints, axis=0)
+        return cp.compress(self.active_links_mask, joints, axis=0)
 
     @classmethod
     def concat(cls, chain1, chain2):

@@ -1,6 +1,6 @@
 # IKPy imports
-from ikpy import chain
-from ikpy.urdf.utils import get_urdf_tree
+from fasterikpy import chain
+from fasterikpy.urdf.utils import get_urdf_tree
 
 # Generate the pdf
 dot, urdf_tree = get_urdf_tree("./baxter.urdf", out_image_path="./baxter", root_element="base")

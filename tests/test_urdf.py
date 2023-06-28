@@ -1,12 +1,12 @@
 import os
 import matplotlib.pyplot as plt
-import numpy as np
+import cupy as cp
 
 # ikpy imports
-from ikpy import chain
-from ikpy.utils import plot
-from ikpy.urdf import URDF
-from ikpy.urdf.utils import get_urdf_tree
+from fasterikpy import chain
+from fasterikpy.utils import plot
+from fasterikpy.urdf import URDF
+from fasterikpy.urdf.utils import get_urdf_tree
 
 
 def test_urdf_chain(resources_path, interactive):
@@ -85,4 +85,4 @@ def test_prismatic_joints(prismatic_robot_urdf):
     fk = chain1.forward_kinematics(initial_kinematics)
     ik = chain1.inverse_kinematics_frame(fk)
 
-    np.testing.assert_almost_equal(fk, chain1.forward_kinematics(ik))
+    cp.testing.assert_almost_equal(fk, chain1.forward_kinematics(ik))

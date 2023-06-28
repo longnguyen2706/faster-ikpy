@@ -2,7 +2,7 @@ import pytest
 import json
 
 # IKPy imports
-from ikpy.chain import Chain
+from fasterikpy.chain import Chain
 
 
 @pytest.fixture

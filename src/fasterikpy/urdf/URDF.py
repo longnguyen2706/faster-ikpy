@@ -5,13 +5,13 @@ This module contains the main functions used to parse URDF files.
 
 import xml.etree.ElementTree as ET
 import json
-import numpy as np
+import cupy as cp
 import itertools
 import warnings
 
 # Ikpy imports
-from ikpy import link as lib_link
-from ikpy import logs
+from fasterikpy import link as lib_link
+from fasterikpy import logs
 
 
 def _find_next_joint(root, current_link, next_joint_name):
@@ -236,7 +236,7 @@ def get_urdf_parameters(urdf_file, base_elements=None, last_link_vector=None, ba
         origin_orientation = [0, 0, 0]
         rotation = None
         translation = None
-        bounds = [-np.inf, np.inf]
+        bounds = [-cp.inf, cp.inf]
 
         origin = joint.find("origin")
         if origin is not None:
@@ -314,7 +314,7 @@ def _get_motor_parameters(json_file):
 
 def _convert_angle_to_pypot(angle, joint, **kwargs):
     """Converts an angle to a PyPot-compatible format"""
-    angle_deg = (angle * 180 / np.pi)
+    angle_deg = (angle * 180 / cp.pi)
 
     if joint["orientation-convention"] == "indirect":
         angle_deg = -1 * angle_deg
@@ -339,7 +339,7 @@ def _convert_angle_from_pypot(angle, joint, **kwargs):
     if joint["name"].startswith("l_shoulder_x"):
         angle_internal = -1 * angle_internal
 
-    angle_internal = (angle_internal / 180 * np.pi)
+    angle_internal = (angle_internal / 180 * cp.pi)
 
     return angle_internal
 
@@ -354,4 +354,4 @@ def _convert_angle_limit(angle, joint, **kwargs):
 
     # angle_pypot = angle_pypot + offset
 
-    return angle_pypot * np.pi / 180
+    return angle_pypot * cp.pi / 180

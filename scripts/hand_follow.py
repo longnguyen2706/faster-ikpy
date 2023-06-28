@@ -1,12 +1,12 @@
 import time
-import numpy as np
+import cupy as cp
 from poppy.creatures import PoppyTorso
 
 
 poppy = PoppyTorso(simulator='vrep')
 
 delay_time = 1
-target_delta = np.array([-0.15, 0, 0])
+target_delta = cp.array([-0.15, 0, 0])
 
 # Initialize the robot
 for m in poppy.motors:

@@ -1,5 +1,5 @@
 # IKPy imports
-from ikpy.chain import Chain
+from fasterikpy.chain import Chain
 
 
 def get_torso_right_arm():
