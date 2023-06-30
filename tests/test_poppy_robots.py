@@ -1,4 +1,4 @@
-import cupy as cp
+import jax.numpy as jnp
 import matplotlib.pyplot as plt
 
 # IKpy imports
@@ -9,7 +9,7 @@ from fasterikpy.utils import plot
 def test_ergo(resources_path, interactive):
     a = chain.Chain.from_urdf_file(resources_path + "/poppy_ergo.URDF")
     target = [0.1, -0.2, 0.1]
-    frame_target = cp.eye(4)
+    frame_target = jnp.eye(4)
     frame_target[:3, 3] = target
     joints = [0] * len(a.links)
     ik = a.inverse_kinematics_frame(frame_target, initial_position=joints)

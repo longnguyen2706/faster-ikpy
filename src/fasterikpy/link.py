@@ -3,7 +3,7 @@
 .. module:: link
 This module implements the Link class.
 """
-import cupy as cp
+import jax.numpy as jnp
 import sympy
 
 # Ikpy imports
@@ -32,7 +32,7 @@ class Link:
 
     def __init__(self, name, length, bounds=None, is_final=False):
         if bounds is None:
-            self.bounds = (-cp.inf, cp.inf)
+            self.bounds = (-jnp.inf, jnp.inf)
         else:
             self.bounds = bounds
         self.name = name
@@ -108,22 +108,22 @@ class URDFLink(Link):
 
     def __init__(self,
                  name: str,
-                 origin_translation: cp.ndarray,
-                 origin_orientation: cp.ndarray,
-                 rotation: Optional[cp.ndarray] = None,
-                 translation: Optional[cp.ndarray] = None,
+                 origin_translation: jnp.ndarray,
+                 origin_orientation: jnp.ndarray,
+                 rotation: Optional[jnp.ndarray] = None,
+                 translation: Optional[jnp.ndarray] = None,
                  bounds=None,
                  angle_representation="rpy",
                  use_symbolic_matrix=False,
                  joint_type: str = "revolute"
                  ):
-        origin_translation = cp.array(origin_translation)
-        Link.__init__(self, name=name, bounds=bounds, length=cp.linalg.norm(origin_translation))
+        origin_translation = jnp.array(origin_translation)
+        Link.__init__(self, name=name, bounds=bounds, length=jnp.linalg.norm(origin_translation))
         self.use_symbolic_matrix = use_symbolic_matrix
-        self.origin_translation = cp.array(origin_translation)
-        self.origin_orientation = cp.array(origin_orientation)
+        self.origin_translation = jnp.array(origin_translation)
+        self.origin_orientation = jnp.array(origin_orientation)
         if rotation is not None:
-            self.rotation = cp.array(rotation)
+            self.rotation = jnp.array(rotation)
             self.has_rotation = True
         else:
             self.rotation = None
@@ -131,7 +131,7 @@ class URDFLink(Link):
         # FIXME: We cast to np array, but the type already asks for a np array
         if translation is not None:
             self.has_translation = True
-            self.translation = cp.array(translation)
+            self.translation = jnp.array(translation)
         else:
             self.has_translation = False
             self.translation = None
@@ -168,9 +168,9 @@ class URDFLink(Link):
 
     def get_rotation_axis(self):
         if self.rotation is not None:
-            return cp.dot(
+            return jnp.dot(
                 geometry.homogeneous_translation_matrix(*self.origin_translation),
-                cp.dot(
+                jnp.dot(
                     geometry.cartesian_to_homogeneous(geometry.rpy_matrix(*self.origin_orientation)),
                     geometry.cartesian_to_homogeneous_vectors(self.rotation * self.axis_length)
                 )
@@ -180,9 +180,9 @@ class URDFLink(Link):
 
     def get_translation_axis(self):
         if self.has_translation:
-            return cp.dot(
+            return jnp.dot(
                 geometry.homogeneous_translation_matrix(*self.origin_translation),
-                cp.dot(
+                jnp.dot(
                     geometry.cartesian_to_homogeneous(geometry.rpy_matrix(*self.origin_orientation)),
                     geometry.cartesian_to_homogeneous_vectors(self.translation * self.axis_length)
                 )
@@ -213,7 +213,7 @@ class URDFLink(Link):
 
         if symbolic:
             # Angle symbolique qui paramètre la rotation du joint en cours
-            symbolic_frame_matrix = cp.eye(4)
+            symbolic_frame_matrix = jnp.eye(4)
 
             # Apply translation matrix
             symbolic_frame_matrix = symbolic_frame_matrix * sympy.Matrix(geometry.homogeneous_translation_matrix(*self.origin_translation))
@@ -236,22 +236,22 @@ class URDFLink(Link):
 
         else:
             # Init the transformation matrix
-            frame_matrix = cp.eye(4)
+            frame_matrix = jnp.eye(4)
 
             # First, apply translation matrix
-            frame_matrix = cp.dot(frame_matrix, geometry.homogeneous_translation_matrix(*self.origin_translation))
+            frame_matrix = jnp.dot(frame_matrix, geometry.homogeneous_translation_matrix(*self.origin_translation))
 
             # Apply orientation
-            frame_matrix = cp.dot(frame_matrix, geometry.cartesian_to_homogeneous(geometry.rpy_matrix(*self.origin_orientation)))
+            frame_matrix = jnp.dot(frame_matrix, geometry.cartesian_to_homogeneous(geometry.rpy_matrix(*self.origin_orientation)))
 
             # Apply rotation matrix
             if self.has_rotation:
-                frame_matrix = cp.dot(frame_matrix, geometry.cartesian_to_homogeneous(geometry.axis_rotation_matrix(self.rotation, theta)))
+                frame_matrix = jnp.dot(frame_matrix, geometry.cartesian_to_homogeneous(geometry.axis_rotation_matrix(self.rotation, theta)))
 
             # Apply translation
             if self.has_translation:
                 translation_vector = self.translation * mu
-                frame_matrix = cp.dot(frame_matrix, geometry.get_translation_matrix(translation_vector))
+                frame_matrix = jnp.dot(frame_matrix, geometry.get_translation_matrix(translation_vector))
 
             return frame_matrix
 
@@ -286,12 +286,12 @@ class DHLink(Link):
     def get_link_frame_matrix(self, parameters):
         """ Computes the homogeneous transformation matrix for this link. """
         theta = parameters
-        ct = cp.cos(theta + self.theta)
-        st = cp.sin(theta + self.theta)
-        ca = cp.cos(self.alpha)
-        sa = cp.sin(self.alpha)
+        ct = jnp.cos(theta + self.theta)
+        st = jnp.sin(theta + self.theta)
+        ca = jnp.cos(self.alpha)
+        sa = jnp.sin(self.alpha)
 
-        return cp.matrix(((ct, -st * ca, st * sa, self.a * ct),
+        return jnp.matrix(((ct, -st * ca, st * sa, self.a * ct),
                           (st, ct * ca, -ct * sa, self.a * st),
                           (0, sa, ca, self.d),
                           (0, 0, 0, 1)))
@@ -309,4 +309,4 @@ class OriginLink(Link):
         return [0, 0, 0, 1]
 
     def get_link_frame_matrix(self, theta):
-        return cp.eye(4)
+        return jnp.eye(4)

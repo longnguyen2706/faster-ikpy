@@ -1,5 +1,5 @@
 import unittest
-import cupy as cp
+import jax.numpy as jnp
 import sys
 import matplotlib.pyplot as plt
 
@@ -48,7 +48,7 @@ def test_ik(torso_right_arm):
     target = [0.1, -0.2, 0.1]
     joints = [0] * len(torso_right_arm.links)
     joints[-4] = 0
-    frame_target = cp.eye(4)
+    frame_target = jnp.eye(4)
     frame_target[:3, 3] = target
 
     ik = torso_right_arm.inverse_kinematics_frame(
@@ -56,7 +56,7 @@ def test_ik(torso_right_arm):
 
     torso_right_arm.plot(ik, ax, target=target)
 
-    cp.testing.assert_almost_equal(
+    jnp.testing.assert_almost_equal(
         torso_right_arm.forward_kinematics(ik)[:3, 3], target, decimal=3)
 
 
@@ -66,21 +66,21 @@ def test_ik_optimization(torso_right_arm):
     target = [0.1, -0.2, 0.1]
     joints = [1] * len(torso_right_arm.links)
     joints[-4] = 0
-    frame_target = cp.eye(4)
+    frame_target = jnp.eye(4)
     frame_target[:3, 3] = target
 
     args = {"max_iter": 3}
     ik = torso_right_arm.inverse_kinematics_frame(
         frame_target, initial_position=joints, **args)
     # Check whether the results are almost equal
-    cp.testing.assert_almost_equal(
+    jnp.testing.assert_almost_equal(
         torso_right_arm.forward_kinematics(ik)[:3, 3], target, decimal=3)
 
     # Check using the scalar optimizer
     ik = torso_right_arm.inverse_kinematics_frame(
     frame_target, initial_position=joints, optimizer="scalar")
     # Check whether the results are almost equal
-    cp.testing.assert_almost_equal(
+    jnp.testing.assert_almost_equal(
         torso_right_arm.forward_kinematics(ik)[:3, 3], target, decimal=3)
 
 

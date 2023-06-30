@@ -1,5 +1,5 @@
 # coding= utf8
-import cupy as cp
+import jax.numpy as jnp
 import matplotlib.animation
 import matplotlib.pyplot as plt  # noqa: F401
 
@@ -53,7 +53,7 @@ def plot_chain(chain, joints, ax, name="chain"):
             if index == 0:
                 rotation_axes.append((node, rotation_axis))
             else:
-                rotation_axes.append((node, geometry.homogeneous_to_cartesian_vectors(cp.dot(transformation_matrixes[index - 1], rotation_axis))))
+                rotation_axes.append((node, geometry.homogeneous_to_cartesian_vectors(jnp.dot(transformation_matrixes[index - 1], rotation_axis))))
 
         # Add translation axis if present
         if link.has_translation:
@@ -61,7 +61,7 @@ def plot_chain(chain, joints, ax, name="chain"):
             if index == 0:
                 translation_axes.append((node, translation_axis))
             else:
-                translation_axes.append((node, geometry.homogeneous_to_cartesian_vectors(cp.dot(transformation_matrixes[index - 1], translation_axis))))
+                translation_axes.append((node, geometry.homogeneous_to_cartesian_vectors(jnp.dot(transformation_matrixes[index - 1], translation_axis))))
 
     # Plot the chain
     lines = ax.plot([x[0] for x in nodes], [x[1] for x in nodes], [x[2] for x in nodes], linewidth=5, label=name)
@@ -89,9 +89,9 @@ def plot_frame(frame_matrix, ax, length=1):
     # Plot the last joint as a solid
     (node, rotation) = geometry.from_transformation_matrix(frame_matrix)
     axes = [
-        geometry.homogeneous_to_cartesian_vectors(cp.dot(frame_matrix, [length, 0, 0, 1])),
-        geometry.homogeneous_to_cartesian_vectors(cp.dot(frame_matrix, [0, length, 0, 1])),
-        geometry.homogeneous_to_cartesian_vectors(cp.dot(frame_matrix, [0, 0, length, 1]))
+        geometry.homogeneous_to_cartesian_vectors(jnp.dot(frame_matrix, jnp.array([length, 0, 0, 1]))),
+        geometry.homogeneous_to_cartesian_vectors(jnp.dot(frame_matrix, jnp.array([0, length, 0, 1]))),
+        geometry.homogeneous_to_cartesian_vectors(jnp.dot(frame_matrix, jnp.array([0, 0, length, 1])))
     ]
 
     for index, axe in enumerate(axes):

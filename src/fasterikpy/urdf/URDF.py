@@ -5,7 +5,7 @@ This module contains the main functions used to parse URDF files.
 
 import xml.etree.ElementTree as ET
 import json
-import cupy as cp
+import jax.numpy as jnp
 import itertools
 import warnings
 
@@ -236,7 +236,7 @@ def get_urdf_parameters(urdf_file, base_elements=None, last_link_vector=None, ba
         origin_orientation = [0, 0, 0]
         rotation = None
         translation = None
-        bounds = [-cp.inf, cp.inf]
+        bounds = [-jnp.inf, jnp.inf]
 
         origin = joint.find("origin")
         if origin is not None:
@@ -314,7 +314,7 @@ def _get_motor_parameters(json_file):
 
 def _convert_angle_to_pypot(angle, joint, **kwargs):
     """Converts an angle to a PyPot-compatible format"""
-    angle_deg = (angle * 180 / cp.pi)
+    angle_deg = (angle * 180 / jnp.pi)
 
     if joint["orientation-convention"] == "indirect":
         angle_deg = -1 * angle_deg
@@ -339,7 +339,7 @@ def _convert_angle_from_pypot(angle, joint, **kwargs):
     if joint["name"].startswith("l_shoulder_x"):
         angle_internal = -1 * angle_internal
 
-    angle_internal = (angle_internal / 180 * cp.pi)
+    angle_internal = (angle_internal / 180 * jnp.pi)
 
     return angle_internal
 
@@ -354,4 +354,4 @@ def _convert_angle_limit(angle, joint, **kwargs):
 
     # angle_pypot = angle_pypot + offset
 
-    return angle_pypot * cp.pi / 180
+    return angle_pypot * jnp.pi / 180

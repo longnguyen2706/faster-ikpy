@@ -3,7 +3,7 @@
 .. module:: chain
 This module implements the Chain class.
 """
-import cupy as cp
+import jax.numpy as jnp
 import json
 import os
 from typing import List
@@ -44,10 +44,10 @@ class Chain:
         if active_links_mask is not None:
             if len(active_links_mask) != len(self.links):
                 raise ValueError("Your active links mask length of {} is different from the number of your links, which is {}".format(len(active_links_mask), len(self.links)))
-            self.active_links_mask = cp.array(active_links_mask)
+            self.active_links_mask = jnp.array(active_links_mask)
 
         else:
-            self.active_links_mask = cp.array([True] * len(links))
+            self.active_links_mask = jnp.array([True] * len(links))
 
         # Always set the last link to True
         if self.active_links_mask[-1] is True:
@@ -80,7 +80,7 @@ class Chain:
         frame_matrix:
             The transformation matrix
         """
-        frame_matrix = cp.eye(4)
+        frame_matrix = jnp.eye(4)
 
         if full_kinematics:
             frame_matrixes = []
@@ -92,9 +92,9 @@ class Chain:
             # Compute iteratively the position
             # NB : Use asarray to avoid old sympy problems
             # FIXME: The casting to array is a loss of time
-            frame_matrix = cp.dot(frame_matrix, cp.asarray(link.get_link_frame_matrix(joint_parameters)))
+            frame_matrix = jnp.dot(frame_matrix, jnp.asarray(link.get_link_frame_matrix(joint_parameters)))
             if full_kinematics:
-                # rotation_axe = cp.dot(frame_matrix, link.rotation)
+                # rotation_axe = jnp.dot(frame_matrix, link.rotation)
                 frame_matrixes.append(frame_matrix)
 
         # Return the matrix, or matrixes
@@ -108,9 +108,9 @@ class Chain:
 
         Parameters
         ----------
-        target_position: cp.ndarray
+        target_position: jnp.ndarray
             Vector of shape (3,): the target point
-        target_orientation: cp.ndarray
+        target_orientation: jnp.ndarray
             Vector of shape (3,): the target orientation
         orientation_mode: str
             Orientation to target. Choices:
@@ -126,18 +126,18 @@ class Chain:
         list:
             The list of the positions of each joint according to the target. Note : Inactive joints are in the list.
         """
-        frame_target = cp.eye(4)
+        frame_target = jnp.eye(4)
 
         # Compute orientation
         if orientation_mode is not None:
             if orientation_mode == "X":
-                frame_target[:3, 0] = target_orientation
+                frame_target.at[:3, 0].set(target_orientation)
             elif orientation_mode == "Y":
-                frame_target[:3, 1] = target_orientation
+                frame_target.at[:3, 1].set(target_orientation)
             elif orientation_mode == "Z":
-                frame_target[:3, 2] = target_orientation
+                frame_target.at[:3, 2].set(target_orientation)
             elif orientation_mode == "all":
-                frame_target[:3, :3] = target_orientation
+                frame_target.at[:3, :3].set(target_orientation)
             else:
                 raise ValueError("Unknown orientation mode: {}".format(orientation_mode))
 
@@ -146,7 +146,7 @@ class Chain:
             no_position = True
         else:
             no_position = False
-            frame_target[:3, 3] = target_position
+            frame_target.at[:3, 3].set(target_position)
 
         return self.inverse_kinematics_frame(target=frame_target, orientation_mode=orientation_mode, no_position=no_position, **kwargs)
 
@@ -167,7 +167,7 @@ class Chain:
             The list of the positions of each joint according to the target. Note : Inactive joints are in the list.
         """
         # Checks on input
-        target = cp.array(target)
+        target = jnp.array(target)
         if target.shape != (4, 4):
             raise ValueError("Your target must be a 4x4 transformation matrix")
 
@@ -333,12 +333,15 @@ class Chain:
         return chain
 
     def active_to_full(self, active_joints, initial_position):
-        full_joints = cp.array(initial_position, copy=True, dtype=cp.float64)
-        cp.place(full_joints, self.active_links_mask, active_joints)
+        full_joints = jnp.array(initial_position, copy=True, dtype=jnp.float64)
+
+        indices = jnp.where(self.active_links_mask)[0]
+        print("active_links_mask", self.active_links_mask, indices, active_joints)
+        full_joints.at(indices).set(active_joints)
         return full_joints
 
     def active_from_full(self, joints):
-        return cp.compress(self.active_links_mask, joints, axis=0)
+        return jnp.compress(self.active_links_mask, jnp.array(joints), axis=0)
 
     @classmethod
     def concat(cls, chain1, chain2):

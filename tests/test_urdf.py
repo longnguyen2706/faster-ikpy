@@ -1,6 +1,6 @@
 import os
 import matplotlib.pyplot as plt
-import cupy as cp
+import jax.numpy as jnp
 
 # ikpy imports
 from fasterikpy import chain
@@ -85,4 +85,4 @@ def test_prismatic_joints(prismatic_robot_urdf):
     fk = chain1.forward_kinematics(initial_kinematics)
     ik = chain1.inverse_kinematics_frame(fk)
 
-    cp.testing.assert_almost_equal(fk, chain1.forward_kinematics(ik))
+    jnp.testing.assert_almost_equal(fk, chain1.forward_kinematics(ik))

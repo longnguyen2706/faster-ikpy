@@ -1,8 +1,11 @@
 # coding= utf8
-import scipy.optimize
-import cupy as cp
+import jax
+import jax.numpy as jnp
+from jax.scipy.optimize import minimize
+from jax.scipy import optimize
+import scipy
 from . import logs
-
+import jaxopt
 
 ORIENTATION_COEFF = 1.
 
@@ -13,7 +16,7 @@ def inverse_kinematic_optimization(chain, target_frame, starting_nodes_angles, r
 
     Parameters
     ----------
-    chain: ikpy.chain.Chain
+    chain: fasterikpy.chain.Chain
         The chain used for the Inverse kinematics.
     target_frame: numpy.array
         The desired target.
@@ -45,7 +48,7 @@ def inverse_kinematic_optimization(chain, target_frame, starting_nodes_angles, r
 
     # Initial function call when optimizing
     def optimize_basis(x):
-        # y = cp.append(starting_nodes_angles[:chain.first_active_joint], x)
+        # y = jnp.append(starting_nodes_angles[:chain.first_active_joint], x)
         y = chain.active_to_full(x, starting_nodes_angles)
         fk = chain.forward_kinematics(y)
 
@@ -98,14 +101,14 @@ def inverse_kinematic_optimization(chain, target_frame, starting_nodes_angles, r
 
         if not no_position:
             def optimize_function(x):
-                # Note: This function casts x into a cp.float64 array, to have good precision in the computation of the gradients
+                # Note: This function casts x into a jnp.float64 array, to have good precision in the computation of the gradients
                 fk = optimize_basis(x)
 
                 target_error = optimize_target_function(fk)
                 orientation_error = (get_orientation(fk) - target_orientation).ravel()
 
                 # Put more pressure on optimizing the distance to target, to avoid being stuck in a local minimum where the orientation is perfectly reached, but the target is nowhere to be reached
-                total_error = cp.concatenate([target_error, ORIENTATION_COEFF * orientation_error])
+                total_error = jnp.concatenate([target_error, ORIENTATION_COEFF * orientation_error])
 
                 return total_error
         else:
@@ -123,7 +126,7 @@ def inverse_kinematic_optimization(chain, target_frame, starting_nodes_angles, r
     # If a regularization is selected
     if regularization_parameter is not None:
         def optimize_total(x):
-            regularization = cp.linalg.norm(x - chain.active_from_full(starting_nodes_angles))
+            regularization = jnp.linalg.norm(x - chain.active_from_full(starting_nodes_angles))
             return optimize_function(x) + regularization_parameter * regularization
     else:
         optimize_total = optimize_function
@@ -141,12 +144,16 @@ def inverse_kinematic_optimization(chain, target_frame, starting_nodes_angles, r
     # least squares optimization
     if optimizer == "scalar":
         def optimize_scalar(x):
-            return cp.linalg.norm(optimize_total(x))
-        res = scipy.optimize.minimize(optimize_scalar, chain.active_from_full(starting_nodes_angles), bounds=real_bounds)
+            return jnp.linalg.norm(optimize_total(x))
+        res = minimize(optimize_scalar, chain.active_from_full(starting_nodes_angles), bounds=real_bounds)
     elif optimizer == "least_squares":
         # We need to unzip the bounds
-        real_bounds = cp.moveaxis(real_bounds, -1, 0)
-        res = scipy.optimize.least_squares(optimize_total, chain.active_from_full(starting_nodes_angles), bounds=real_bounds)
+        real_bounds = jnp.moveaxis(real_bounds, -1, 0)
+        # def optimize_least_squares(x):
+        #     return jaxopt.objectives.least_squares(optimize_total(x))
+        jax.config.update("jax_enable_x64", True)
+        solver = jaxopt.ScipyBoundedLeastSquares(fun=optimize_total)
+        res = solver.run(chain.active_from_full(starting_nodes_angles),bounds=real_bounds)
 
     if res.status != -1:
         logs.logger.info("Inverse kinematic optimisation OK, termination status: {}".format(res.status))

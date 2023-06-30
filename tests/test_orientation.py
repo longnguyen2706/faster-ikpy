@@ -1,4 +1,4 @@
-import cupy as cp
+import jax.numpy as jnp
 
 
 def test_orientation(baxter_left_arm):
@@ -19,8 +19,8 @@ def test_orientation(baxter_left_arm):
         # Check
         ## Note: could be put to 5 decimals, since it works with 5 on local machines and the CI with python > 3.6
         ## However in order to support 3.6, we put 3 and 4 decimals here...
-        cp.testing.assert_almost_equal(position, target_position, decimal=3)
-        cp.testing.assert_almost_equal(orientation, target_orientation, decimal=4)
+        jnp.testing.assert_almost_equal(position, target_position, decimal=3)
+        jnp.testing.assert_almost_equal(orientation, target_orientation, decimal=4)
 
 
 def test_orientation_full_frame(baxter_left_arm):
@@ -36,13 +36,13 @@ def test_orientation_full_frame(baxter_left_arm):
     orientation = baxter_left_arm.forward_kinematics(ik)[:3, :3]
 
     # Check
-    cp.testing.assert_almost_equal(orientation, target_orientation, decimal=5)
-    cp.testing.assert_almost_equal(position, target_position, decimal=5)
+    jnp.testing.assert_almost_equal(orientation, target_orientation, decimal=5)
+    jnp.testing.assert_almost_equal(position, target_position, decimal=5)
 
 
 
 def test_orientation_only(baxter_left_arm):
-    target_orientation = cp.eye(3)
+    target_orientation = jnp.eye(3)
 
     # Begin to place the arm an initial position
     target_position = [0.1, 0.4, -0.1]
@@ -54,10 +54,10 @@ def test_orientation_only(baxter_left_arm):
     orientation = baxter_left_arm.forward_kinematics(ik)[:3, :3]
 
     # Check orientation
-    cp.testing.assert_almost_equal(orientation, target_orientation, decimal=5)
+    jnp.testing.assert_almost_equal(orientation, target_orientation, decimal=5)
 
     # At this point, we should get a random position, that is different that the position before
     # So check that they are not equal
-    cp.testing.assert_raises(AssertionError, cp.testing.assert_almost_equal, position, target_position)
+    jnp.testing.assert_raises(AssertionError, jnp.testing.assert_almost_equal, position, target_position)
 
 

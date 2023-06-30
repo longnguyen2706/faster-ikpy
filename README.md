@@ -113,3 +113,8 @@ If you use IKPy as part of a publication, please use the Bibtex below as a citat
   url          = {https://doi.org/10.5281/zenodo.6551158}
 }
 ```
+
+```bash
+pip install jaxopt
+
+```
